@@ -7,6 +7,7 @@ import { AuthContext } from "../providers/auth_provider";
 import { useContext } from "react";
 import { LoadingPage } from "../components/loadingPage";
 import { Error404 } from "../components/errors/error404";
+import { MotionTest } from "../components/ComponentsTests";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);

@@ -30,7 +30,7 @@ import { Loading } from "../../shared/components/loading";
 import { IImage } from "../../models/image";
 import { isEqualArray } from "../../shared/utils/is_equal_array";
 import { useForm, SubmitHandler, Form } from "react-hook-form";
-import { UploadIcon } from "../../shared/icons";
+import { DeleteIcon, UploadIcon } from "../../shared/icons";
 import { UploadItemModal } from "./components/uploadItemModal";
 import { ImageService } from "../../services/images_service";
 import { ErrorPage } from "../../shared/components/errors";
@@ -46,6 +46,7 @@ export default function ImagesManagementPage({
   const [images, setImages] = useState<IImage[]>([]);
   const [oldImagesArray, setOldImagesArray] = useState<IImage[]>([]);
   const [isLoading, setIsLoading] = useBoolean(false);
+  const [deleteMode, setDeleteMode] = useBoolean(false);
   const [activeId, setActiveId] = useState(null);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -106,22 +107,23 @@ export default function ImagesManagementPage({
     formState: { isSubmitting },
   } = useForm<(typeof Image)[]>();
 
-  const onSubmit: SubmitHandler<(typeof Image)[]> = async (mydata) => {
-    await ImageService.overwriteAll(images).then(async () => {
-      await sleep(2000, loadImages);
-    });
-    // .catch(async (e) => {
-    //     toast({
-    //       title: "Um erro aconteceu quando deletando",
-    //       status: "error",
-    //       duration: 9000,
-    //       isClosable: true,
-    //     })
+  const onSubmit: SubmitHandler<(typeof Image)[]> = async () => {
+    setIsLoading.on();
+    await ImageService.overwriteAll(images)
+      .then(async () => {
+        await sleep(2000, loadImages);
 
-    //     setIsLoading.on()
-
-    //     // await ImageService.
-    // })
+        setDeleteMode.off();
+        setIsLoading.off();
+      })
+      .catch(async () => {
+        toast({
+          title: "Um erro aconteceu quando deletando",
+          status: "error",
+          duration: 9000,
+          isClosable: true,
+        });
+      });
   };
 
   const sensors = useSensors(
@@ -155,10 +157,16 @@ export default function ImagesManagementPage({
 
   const handleCancel = () => {
     setImages(oldImagesArray);
+    setDeleteMode.off();
   };
 
   const handleItemRemove = (id: string) => {
     setImages((oldState) => oldState.filter((value) => value.id !== id));
+  };
+
+  const handleModalOpen = () => {
+    onOpen();
+    setDeleteMode.off();
   };
 
   return (
@@ -166,7 +174,6 @@ export default function ImagesManagementPage({
       style={{
         display: "flex",
         width: "100%",
-        // backgroundColor: "black",
         height,
         justifyContent: "center",
         overflowY: "auto",
@@ -181,24 +188,33 @@ export default function ImagesManagementPage({
         onDragStart={handleDragStart}
       >
         <Stack w={"90%"} gap={6}>
-          <Flex width={"100%"} marginTop={2}>
+          <Flex
+            width={"100%"}
+            marginTop={2}
+            flexDirection={{ base: "column", md: "row" }}
+            gap={4}
+          >
             <Text
-              fontSize={20}
+              fontSize={24}
               display={"flex"}
               width={"100%"}
-              textAlign={"start"}
               color={"white"}
+              justifyContent={{ base: "center", md: "flex-start" }}
             >
               Gerenciador de Imagens
             </Text>
-            <Button bgColor={"yellow"} onClick={onOpen}>
-              <Flex gap={".5rem"} alignItems={"center"}>
-                Upload
+            <Flex gap={2} justifyContent={{ base: "center", md: "flex-end" }}>
+              <Button bgColor={"yellow"} onClick={handleModalOpen} gap={1.5}>
                 <UploadIcon />
-              </Flex>
-            </Button>
+                <Text>Upload</Text>
+              </Button>
+              <Button bgColor={"red"} onClick={setDeleteMode.toggle} gap={1.5}>
+                <DeleteIcon />
+                <Text>Apagar</Text>
+              </Button>
+            </Flex>
           </Flex>
-          {isEqualArray(images, oldImagesArray) ? (
+          {isEqualArray(images, oldImagesArray) || deleteMode ? (
             <Flex gap={".5rem"} justifyContent={"end"}>
               <Button
                 type="submit"
@@ -208,7 +224,11 @@ export default function ImagesManagementPage({
               >
                 Salvar
               </Button>
-              <Button bgColor={"red"} onClick={handleCancel}>
+              <Button
+                bgColor={"red"}
+                onClick={handleCancel}
+                disabled={isSubmitting}
+              >
                 Cancelar
               </Button>
             </Flex>
@@ -249,6 +269,7 @@ export default function ImagesManagementPage({
                     id={image.id}
                     value={image}
                     handleRemove={handleItemRemove}
+                    deleteMode={deleteMode}
                   />
                 ))}
                 <DragOverlay>

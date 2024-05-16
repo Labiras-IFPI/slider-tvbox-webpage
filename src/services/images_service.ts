@@ -1,7 +1,6 @@
 import {
   Timestamp,
   collection,
-  collection,
   deleteDoc,
   doc,
   getDoc,
@@ -17,12 +16,10 @@ import {
   StorageReference,
   UploadTask,
   deleteObject,
-  getBytes,
   getDownloadURL,
   ref,
   uploadBytesResumable,
 } from "firebase/storage";
-import { Toast, useToast } from "@chakra-ui/react";
 
 async function createDocument(image: IImage) {
   const documentReference = doc(firestore, "images", image.id);
@@ -81,8 +78,6 @@ async function getAllImages(): Promise<IImage[]> {
 }
 
 function uploadImageWithProgress(image: File): UploadTask {
-  //Retornar um valor q vem de um uploadTaskResumable
-
   const storageRef = ref(storage, `images/${image.name}`);
 
   return uploadBytesResumable(storageRef, image);
@@ -117,13 +112,7 @@ async function checkIfImageExists(
     }
 
     return Promise.resolve(false);
-    // const reference = ref(storage, `images/${imageName}`).;
 
-    // const url = await getDownloadURL(reference).then((url) => url);
-
-    // if (url) {
-    //   return Promise.resolve(true);
-    // }
   } catch (error) {
     if (error instanceof StorageError) {
       if (error.code === "storage/object-not-found") {
@@ -161,25 +150,18 @@ async function deleteRef(name: string): Promise<void> {
   await deleteObject(storageRef);
 }
 
-async function overwriteAllImages(newImages: IImage[]) {
-  //Pegar todas as imagens
-  const allImages: IImage[] = await getAllImages();
+async function overwriteAllImages(presentImages: IImage[]) {
+  const oldImages: IImage[] = await getAllImages();
 
-  //Selecionar as imagens que devem ser apagadas so o documento e as que precisam ter a sua referencia removida
-  allImages.forEach(async (image) => {
-    //Se estiver dentro do array, apagar somente o documento
-    if (newImages.find((newImage) => newImage.id === image.id)) {
-      await deleteDocument(image.id);
+  oldImages.forEach(async (oldImage) => {
+    if (presentImages.find((presentImage) => oldImage.id === presentImage.id)) {
+      await deleteDocument(oldImage.id);
       return;
     }
-    // console.log(allImages);
 
-    //Se não estiver dentro do array, apagar o documento e a referencia da imagem no storage
-    await deleteDocumentWithImage(image.id);
+    await deleteDocumentWithImage(oldImage.id);
   });
-
-  //Criar todos os documentos que a referência da imagem não foi removida
-  await createManyDocuments(newImages);
+  await createManyDocuments(presentImages);
 }
 
 export const ImageService = {

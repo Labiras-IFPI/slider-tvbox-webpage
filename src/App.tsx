@@ -9,6 +9,7 @@ function App() {
   return (
     <ChakraProvider theme={theme}>
       <AuthProvider>
+    
         <RouterProvider router={routes} />
       </AuthProvider>
     </ChakraProvider>

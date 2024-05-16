@@ -1,4 +1,8 @@
-import { Navigate, createBrowserRouter } from "react-router-dom";
+import {
+  Navigate,
+  createBrowserRouter,
+  createHashRouter,
+} from "react-router-dom";
 import ImagesManagementPage from "../../pages/imageManagementPage";
 import { NavBar } from "../components/navBar";
 import { MainLayout } from "../components/layout";
@@ -19,7 +23,7 @@ const ProtectedRoute = ({ children }) => {
   return user ? children : <Navigate to={"/login"} replace />;
 };
 
-const routes = createBrowserRouter([
+const routes = createHashRouter([
   {
     path: "/gerenciador",
     element: (
